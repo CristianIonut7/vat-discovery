@@ -96,6 +96,30 @@ DECISION: not handling 12-digit / GD / HA formats.
   the company-level identifier is the first 9 digits. If I meet them during
   extraction, I can take the first 9 digits. Not worth building now.
 
+**17:34** Verified the 4 numbers on the HMRC web checker:
+| Found on              | HMRC name                    | HMRC address        | Result |
+|-----------------------|------------------------------|---------------------|--------|
+| Argos T&Cs            | SAINSBURY'S SUPERMARKETS LTD | 33 Charterhouse St  | valid  |
+| Go Outdoors T&Cs      | JD SPORTS FASHION PLC        | Hollinsbrook Way, Bury | valid |
+| Currys eBay profile   | CURRYS GROUP LIMITED         | 1 Portal Way, Acton | valid  |
+| TES Consumer Solutions eBay listing | -              | -                   | NOT FOUND (checksum ok) |
+
+KEY FINDING: VAT groups. 2/3 valid numbers are registered to the PARENT
+(Sainsbury's for Argos, JD Sports for Go Outdoors), not the company that
+publishes them. A name-only match rule would flag 2 correct numbers as false
+positives. For the customer the group number IS the right one: it's what
+appears on the supplier's invoices.
+→ "Correct" must be defined as "the number this company invoices under",
+  not "HMRC name == CH name".
+→ Matching needs a third outcome: name mismatch but address matches /
+  parent-subsidiary link (Companies House PSC data could confirm the parent).
+- Address matched the publishing company's registered office in both cases;
+  the aggregator's Argos address (Milton Keynes) was stale.
+- Checksum-valid ≠ registered: TES number passes checksum, HMRC has no record
+  (deregistered? typo on page? stale listing?).
+- Web checker: at the moment there was no captcha or fill limit
+
+
 **17:08** Downloaded [text](../data/raw/BasicCompanyDataAsOneFile-2026-11-01.zip)
 
 ### TODO
