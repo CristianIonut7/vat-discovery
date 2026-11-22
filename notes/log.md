@@ -24,16 +24,16 @@
 
 **16:58** DECISION: no production API for this PoC.
 - Why: production access needs a separate request + approval; today is Sunday,
-  submission is due tonight → won't be approved in time.
+  submission was planned for tonight → won't be approved in time.
 - Instead: verify candidates via the public web checker
   (gov.uk/check-uk-vat-number), which returns validity + registered
   name and address.
 - Consequences:
   - verification throughput is low (manual / slow) → caps my sample size
     and the number of candidates I can verify;
-  - I should filter candidates hard (format + checksum) BEFORE using the checker,
-    so no checks are wasted on garbage.
-  - For Part 3: at scale, production API access is a hard prerequisite;
+  - I should filter candidates hard (format + checksum) BEFORE using the
+    checker, so no checks are wasted on garbage;
+  - for Part 3: at scale, production API access is a hard prerequisite;
     note rate limits and the terms of use as constraints.
 
 ### Hypotheses to test (not yet verified)
@@ -46,7 +46,6 @@
 - H4: Companies with websites that sell online are legally required to show
   their VAT number → website footers / terms pages are a candidate source.
   Open question: CH has no websites, how do I get from company → domain?
-  submission is due tonight → wontime.
 
 **17:04** Tried to request production credentials. It is a full compliance
 questionnaire (organisation details, development practices, a named
@@ -58,6 +57,8 @@ manual review. Progress expires after 6 months.
   Need to check whether the terms allow bulk / commercial re-verification
   (relevant for the brute-force debate topic too).
 
+**17:08** Downloaded Companies House BasicCompanyDataAsOneFile-2026-11-01.zip
+into data/raw/ (not committed).
 
 **17:10** src/vat.py: normalise() + mod-97 checksum (both schemes: %97==0
 and +55) + validate() returning a reason (ok / bad_format / bad_checksum).
@@ -78,8 +79,8 @@ Observations while searching:
 - eBay shows "Business details: VAT number" for business sellers → possible
   source, but only covers companies that sell on eBay.
 - Argos: aggregator sites list an HMRC address (Milton Keynes, tax dept)
-  different from the registered office → address matching may be unreliable,
-  name matching matters more. To confirm on HMRC checker.
+  different from the registered office → address matching may be unreliable.
+  To confirm on HMRC checker.
 - Aggregators like vat-search.com already exist (cite HMRC checker + CH as
   sources) → contradicts "nobody sells it"; investigate later.
 
@@ -97,12 +98,13 @@ DECISION: not handling 12-digit / GD / HA formats.
   extraction, I can take the first 9 digits. Not worth building now.
 
 **17:34** Verified the 4 numbers on the HMRC web checker:
-| Found on              | HMRC name                    | HMRC address        | Result |
-|-----------------------|------------------------------|---------------------|--------|
-| Argos T&Cs            | SAINSBURY'S SUPERMARKETS LTD | 33 Charterhouse St  | valid  |
-| Go Outdoors T&Cs      | JD SPORTS FASHION PLC        | Hollinsbrook Way, Bury | valid |
-| Currys eBay profile   | CURRYS GROUP LIMITED         | 1 Portal Way, Acton | valid  |
-| TES Consumer Solutions eBay listing | -              | -                   | NOT FOUND (checksum ok) |
+
+| Found on                            | HMRC name                    | HMRC address           | Result |
+|-------------------------------------|------------------------------|------------------------|--------|
+| Argos T&Cs                          | SAINSBURY'S SUPERMARKETS LTD | 33 Charterhouse St     | valid  |
+| Go Outdoors T&Cs                    | JD SPORTS FASHION PLC        | Hollinsbrook Way, Bury | valid  |
+| Currys eBay profile                 | CURRYS GROUP LIMITED         | 1 Portal Way, Acton    | valid  |
+| TES Consumer Solutions eBay listing | -                            | -                      | NOT FOUND (checksum ok) |
 
 KEY FINDING: VAT groups. 2/3 valid numbers are registered to the PARENT
 (Sainsbury's for Argos, JD Sports for Go Outdoors), not the company that
@@ -117,19 +119,14 @@ appears on the supplier's invoices.
   the aggregator's Argos address (Milton Keynes) was stale.
 - Checksum-valid ≠ registered: TES number passes checksum, HMRC has no record
   (deregistered? typo on page? stale listing?).
-- Web checker: at the moment there was no captcha or fill limit
-
-
-**17:08** Downloaded [text](../data/raw/BasicCompanyDataAsOneFile-2026-11-01.zip)
+- Web checker: no captcha or rate limit observed so far.
 
 **17:48** Explored CH snapshot 2026-11-01: 5,711,779 rows, 5,179,256 Active
 (+417k "proposal to strike off"). Brief says ~4.2M live; to explain.
 - 1.27M active companies incorporated 2025-2026 (~25%). Their activity is
-  UNKNOWN: "NO ACCOUNTS FILED" is likely a timing effect (first accounts due
-  ~21 months after incorporation), not evidence of inactivity. [verify with
-  year × AccountCategory]
-- DORMANT 557k + NO ACCOUNTS FILED 1.34M → large share almost certainly
-  not VAT-registered.
+  UNKNOWN (see 17:57).
+- DORMANT 557k → almost certainly not VAT-registered.
+- NO ACCOUNTS FILED 1.34M → initially assumed inactive; corrected at 17:57.
 - Top SIC: residential letting / real estate / holding cos / residents'
   management → typically VAT-exempt or not trading.
 - 47910 internet retail: 148k → most likely to publish VAT (legal duty online).
@@ -141,7 +138,8 @@ Need stratified sample + per-stratum reporting. Customer's suppliers
 **17:57** Verified: NO ACCOUNTS FILED × incorporation year (active):
 2026: 650,056 | 2025: 525,457 | 2024: 22,000 | 2023: 24,656 | 2022: 14,792
 → ~88% of "NO ACCOUNTS FILED" are 2025-26 incorporations: a timing effect
-  (first accounts not yet due), not a size/activity signal.
+  (first accounts due ~21 months after incorporation), not a size/activity
+  signal.
 → Treat it as a "new company, size unknown" stratum. The ~70k older ones are
   late filers / anomalies.
 (Corrected my earlier assumption that new companies are mostly inactive:
@@ -165,6 +163,9 @@ assumption):
   not a sampling issue.
 - SIC 68xxx (real estate), 64209 (holding cos), 98000 (residents' mgmt),
   99999 (dormant).
+- The SIC filter uses ALL 4 SIC codes: a company counts as irrelevant only if
+  EVERY supplied code is in the excluded list. E.g. 68100 + 47910 still
+  trades → kept.
 
 Kept:
 - New companies (2025-26, NO ACCOUNTS FILED) → own stratum. Excluding them
@@ -177,24 +178,22 @@ No sector filter: we don't know the customer's real supplier list
 (a manufacturer also buys IT, cleaning, catering...). Instead, keep SIC in the
 sample and analyse coverage by sector afterwards.
 
-
 Reproducibility: the sample is drawn with a fixed random seed, so anyone can
 regenerate exactly the same 500 companies from the same CH snapshot.
-
-
 
 **18:20-18:32** SAMPLE SIZE AND ALLOCATION — decisions:
 
 Strata (by Accounts.AccountCategory, after the filters above):
-| Stratum       | Definition                                                        |
-|---------------|-------------------------------------------------------------------|
-| micro         | MICRO ENTITY                                                      |
-| small_exempt  | TOTAL EXEMPTION FULL                                              |
-| small         | SMALL, UNAUDITED ABRIDGED, AUDITED ABRIDGED, TOTAL EXEMPTION SMALL|
-| large         | FULL, MEDIUM, GROUP, AUDIT EXEMPTION SUBSIDIARY                   |
-| new           | NO ACCOUNTS FILED and incorporated 2025-2026                      |
-| control       | random draw from what I EXCLUDED as irrelevant (dormant + SIC     |
-|               | 68xxx / 64209 / 98000 / 99999)                                    |
+
+| Stratum      | Definition                                                         |
+|--------------|--------------------------------------------------------------------|
+| micro        | MICRO ENTITY                                                       |
+| small_exempt | TOTAL EXEMPTION FULL                                               |
+| small        | SMALL, UNAUDITED ABRIDGED, AUDITED ABRIDGED, TOTAL EXEMPTION SMALL |
+| large        | FULL, MEDIUM, GROUP, AUDIT EXEMPTION SUBSIDIARY                    |
+| new          | NO ACCOUNTS FILED and incorporated 2025-2026                       |
+| control      | random draw from what I EXCLUDED as irrelevant (dormant + SIC 68xxx / 64209 / 98000 / 99999) |
+
 Left out (small): ACCOUNTS TYPE NOT AVAILABLE, PARTIAL EXEMPTION, FILING
 EXEMPTION SUBSIDIARY, and ~70k pre-2025 companies with no accounts filed
 (late filers / anomalies).
@@ -231,18 +230,9 @@ Allocation: considered three options.
 Why: the goal is not one headline number but understanding how feasibility
 varies by company type; per-stratum precision matters more here.
 
-SIC filter uses ALL 4 SIC codes: a company counts as irrelevant only if EVERY
-supplied code is in the excluded list (68xxx/64209/98000/99999). E.g. 68100 +
-47910 still trades → kept.
-
-Reproducibility: fixed random seed.
-
-
-
 **19:10** sample.py hit Out of Memory on the full snapshot; ran after freeing
 RAM (~95% used). Replaced with a low-memory version (only the 16 needed
 columns, drop intermediate tables, spill to disk). Same deterministic sample.
-
 
 **19:11** Sample drawn (data/sample/sample.csv, 500 rows, shuffled order).
 Population per stratum (data/sample/strata_sizes.csv):
@@ -254,37 +244,41 @@ Sanity bound: ~2.18M VAT registrations nationally INCLUDING sole traders
 vs 3.58M target companies → coverage can never approach 100%.
 TODO: find HMRC stats on VAT registrations by legal form → realistic ceiling.
 
+**~20:50-21:25** Manual pilot on the first 10 companies by process_order
+(details: notes/pilot.md). Notes taken along the way:
 
-- #4 Gemini cited a "VAT lookup" aggregator site [nume/URL] as source;
-  the site did not load for me → number unverifiable from source.
-  Aggregators appear repeatedly (also vat-search.com) → investigate later:
-  where do they get numbers, how fresh, can a product legally use them?
-
-
-  - #4 HMRC check: GB668395969 → CHUBB SERVICES UK LIMITED, 40 Leadenhall St,
-  London EC3A 2BJ. Correct match. [CH address matches? yes/no]
+- #4 Chubb Services UK Ltd: no own website (uses group site chubb.com), no VAT
+  number shown. Gemini cited the aggregator vat-lookup.co.uk as source; that
+  page did not load for me.
+  HMRC check: GB668395969 → CHUBB SERVICES UK LIMITED, 40 Leadenhall St,
+  London EC3A 2BJ. CH address matches → name + address match.
   Gemini was right here, but n=1 proves nothing about LLM reliability.
-  KEY: number NOT on company's own site, yet the aggregator (vat-lookup.co.uk)
-  has it. Hypotheses for how aggregators get numbers: (a) invoices / public
-  documents, (b) systematic enumeration of HMRC checker with checksum-valid
-  numbers (see debate topic). Unknown — investigate their stated sources.
-
-  | 5 | CHRISTOPHER TOPCO LIMITED | large | no own site; only CH-data aggregators | no | 2 | SIC 56101 (restaurants) but name = "Topco" → holding at top of a group, declares the group's SIC; my SIC filter can't catch it. Name patterns (Topco/Midco/Bidco/Holdings) are a better signal. Likely in a VAT group → "not found" probably correct |
-
-  - Holding companies can declare the group's operating SIC (e.g. 56101) →
-  SIC-based exclusion misses them. Name patterns (Topco/Midco/Bidco/Holdings)
+  KEY: number NOT on company's own site, yet the aggregator has it.
+  Hypotheses for how aggregators get numbers: (a) invoices / public documents,
+  (b) systematic enumeration of HMRC checker with checksum-valid numbers
+  (see debate topic). Unknown → investigate their stated sources.
+- #5 Christopher Topco Ltd: SIC 56101 (restaurants), but "Topco" = holding at
+  the top of a group. Holding companies can declare the group's operating SIC
+  → SIC-based exclusion misses them. Name patterns (Topco/Midco/Bidco/Holdings)
   could flag them. Large stratum likely over-represents holdings/subsidiaries
   (VAT groups) → expect lower "own number" discovery there.
-
-
-  - IDEA: CH company number on the same page/site as the VAT number = strong
+- #6 LGSL Online Ltd: site found via Gemini, but no CH number or address on it
+  → can't link it to the company.
+  IDEA: CH company number on the same page/site as the VAT number = strong
   identity anchor (legally required on UK company websites). Use it to accept
   a candidate, instead of fuzzy name matching → reduces false positives.
+- #7 Fresh Art Club: VAT GB492114011 only on Endole (commercial company-data
+  aggregator); own site (freshartclub.com) shows neither VAT nor CH number.
+  Endole's CH number matches the sample. Not yet verified at HMRC.
+- #10 Blue Jay of London: no site; Gemini offered VAT numbers of SIMILARLY
+  named companies (BluJay Solutions, Bluejay Homes) → concrete false-positive
+  trap for name matching.
+- DECISION: LLM answers (Gemini) are not a source. Only a page I can cite
+  counts; LLM output is logged separately.
 
-
-  **21:25** Manual pilot done (notes/pilot.md), first 10 companies, ~25 min.
+**21:25** Manual pilot done, ~25 min.
 - Candidate VAT found: 5/10 (3 own website, 2 aggregators only).
-- Website found: 6/10; confirmed by CH number on site: [n].
+- Website found: 6/10; confirmed by CH number on site: 4 (#1, #2, #3, #9).
 - Nothing at all: 4/10 (holding with no site, new companies, small firms).
 - ~2.5 min/company manually → 500 companies ≈ 21h; doesn't scale.
 Findings:
@@ -295,3 +289,8 @@ Findings:
 3. Name matching is dangerous: for #10 Gemini offered VAT numbers of
    similarly-named companies. CH number on the page = identity anchor.
 4. n=10: signals only, not rates.
+
+**21:29** Checked #1-#3: CH number appears on all three sites.
+→ In 3/3 own-website finds, VAT number and the correct CH number are on the
+  same site. Rule "accept VAT only if the company's CH number is on the
+  same site" would keep all 3 good finds and reject the #10 trap.
