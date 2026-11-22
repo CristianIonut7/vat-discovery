@@ -18,13 +18,13 @@ Candidates are **not** counted as found until verified on the HMRC checker.
 | 4 | CHUBB SERVICES UK LIMITED | large | no own site, uses group site (chubb.com) | GB668395969, via Gemini → aggregator (vat-lookup.co.uk, page did not load) | 4 | Not on company site. **HMRC: CHUBB SERVICES UK LIMITED, 40 Leadenhall St, EC3A 2BJ → name + address match CH.** |
 | 5 | CHRISTOPHER TOPCO LIMITED | large | no own site; only CH-data aggregators (companycheck, formationdata) | none | 2 | SIC 56101 (restaurants) but name = "Topco" → holding at top of a group, declares the group's SIC; SIC filter can't catch it. Likely in a VAT group → "not found" probably correct. |
 | 6 | LGSL ONLINE LTD | new | lgslonline.com (via Gemini), **unconfirmed**: no CH no., no address on site | none | 3 | Can't link site to company. UK law requires CH details on company websites → absent = non-compliant or not this company. |
-| 7 | FRESH ART CLUB LTD | small_exempt | freshartclub.com, **unconfirmed**: no CH no., no VAT on site | GB492114011, Endole (aggregator) only | 4 | CH no. in Endole URL matches sample. Number not published by the company itself. |
+| 7 | FRESH ART CLUB LTD | small_exempt | freshartclub.com, **unconfirmed**: no CH no., no VAT on site | GB492114011, Endole (aggregator) only | 4 | CH no. in Endole URL matches sample. Number not published by the company itself.**HMRC: name + address match.** |
 | 8 | SABAYAHAIR LTD | new | none found | none | 3 | New company, no web presence. |
 | 9 | INGR TECHNOLOGY LTD | small | ingr.tech, **confirmed** (CH no. on /terms matches) | none, not on terms page | 3 | Strongest kind of "not found": right page, confirmed site. Not registered, or B2B firm not obliged to publish? |
 | 10 | BLUE JAY OF LONDON LTD. | small | none found | none | 3 | Gemini offered VAT numbers of **similarly named** companies (BluJay Solutions, Bluejay Homes) → false-positive trap for name matching. |
 
 In all 3 own-website finds, the VAT number and the matching CH number appear on the same site.
-All 5 candidates pass the mod-97 checksum. HMRC verification so far: #4 only.
+All 5 candidates pass the mod-97 checksum. HMRC verification so far:  #4, #7 (both correct).
 
 ## Summary
 

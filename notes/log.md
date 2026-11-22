@@ -117,6 +117,7 @@ appears on the supplier's invoices.
   parent-subsidiary link (Companies House PSC data could confirm the parent).
 - Address matched the publishing company's registered office in both cases;
   the aggregator's Argos address (Milton Keynes) was stale.
+  (Later, at n=31, address turned out to be unreliable: see 23:45.)
 - Checksum-valid ≠ registered: TES number passes checksum, HMRC has no record
   (deregistered? typo on page? stale listing?).
 - Web checker: no captcha or rate limit observed so far.
@@ -244,6 +245,9 @@ Sanity bound: ~2.18M VAT registrations nationally INCLUDING sole traders
 vs 3.58M target companies → coverage can never approach 100%.
 TODO: find HMRC stats on VAT registrations by legal form → realistic ceiling.
 
+**20:41** Emailed HR: submission moved to Tue 24 Nov, to have time for a
+proper write-up. Plan: sources + experiments tonight, README Mon/Tue.
+
 **~20:50-21:25** Manual pilot on the first 10 companies by process_order
 (details: notes/pilot.md). Notes taken along the way:
 
@@ -297,7 +301,7 @@ Findings:
 
 
 
-  **21:45** DECISION: what to automate next. Options considered:
+**21:45** DECISION: what to automate next. Options considered:
 - A+B (guess domain from name → fetch homepage + legal pages → extract VAT,
   accept only if CH number on same site). Code written (src/sources/website.py).
   My doubt: domain guessing misses many sites (e.g. #9 is ingr.tech, not
@@ -333,8 +337,8 @@ Why it failed (real domains from the pilot):
 | 1 | British Arab Commercial Bank PLC | bacb.co.uk                               | acronym |
 | 2 | Clearwater Servicing Ltd         | clearwaterltd.com, clearwaterchemicals.co.uk | brand name ≠ legal name, 2 domains |
 | 3 | Thunder Energy Services Ltd      | thunderenergy.co.uk                      | generic word dropped ("Services") |
-Fetch test on thunderenergy.co.uk: [OK] → [failure is domain
-guessing, not blocking].
+Fetch test on thunderenergy.co.uk: OK → the failure is domain guessing,
+not blocking.
 
 DEAD END: name → domain guessing. Even with variants (dropping generic words)
 it would recover at most 1/3 here; acronyms and brand names are not derivable
@@ -344,6 +348,19 @@ leads to the page → Common Crawl (C).
 Kept the CH-number identity check: it correctly refused to trust the two
 name-matched sites.
 
+
+**~21:55** C implemented (src/sources/commoncrawl.py). Design decisions:
+- Stream WET files (plain text of each page) straight from
+  data.commoncrawl.org, nothing stored on disk; random but seeded file choice.
+- Cheap pre-filter: skip pages without the word "VAT".
+- VAT numbers: regex + checksum; keep only if labelled ("VAT" within 60 chars
+  before) or written with a GB/XI prefix (bare 9 digits = too noisy).
+- CH numbers: accepted ONLY with a label before them ("Company No.",
+  "Registered in England No.", "Reg. No." ...); leading zeros restored.
+  Loses some cases, but random 6-8 digit numbers would swamp the data.
+- Multi-company pages (directories) are KEPT but marked (n_ch_on_page,
+  n_vat_on_page) so I can measure how common they are before dropping them.
+- Resumable: finished files are recorded in cc_stats.csv and skipped.
 
 **22:05** Common Crawl test, crawl CC-MAIN-2026-43 (100,000 WET files),
 2 random files (seeded), ~42k pages, ~5s/file streamed (no disk).
@@ -357,7 +374,7 @@ name-matched sites.
   HMRC-check a random subsample of pairs for precision.
 
 
-  **22:13** Started Common Crawl run: 200 files, then stopped (Ctrl+C) at ~70
+**22:13** Started Common Crawl run: 200 files, then stopped (Ctrl+C) at ~70
 and restarted with 500. Same seed → the first 200 of the 500 list are the
 same files; finished files are skipped. The file interrupted mid-way is
 reprocessed → some duplicate pairs in cc_pairs.csv, removed at analysis.
@@ -369,14 +386,14 @@ reprocessed → some duplicate pairs in cc_pairs.csv, removed at analysis.
   ~0.045-0.95 EUR per search; terms forbid retransmission / other use without
   agreement → not resellable in our product. Also sells "full-service VAT
   cleansing" with human specialists = exactly the customer's problem.
-- vat-lookup.co.uk: no search by name; looks like a checker whose result pages
-  get indexed by Google (hypothesis).
+- vat-lookup.co.uk: no search by name found at first; looked like a checker
+  whose result pages get indexed by Google (hypothesis, CORRECTED at 23:00).
 - DECISION: no vat-search account (terms answer the key question; free tier
   ~3 lookups). Coverage of this source stays unmeasured.
 - KEY for Part 3: the customer could fill its ~26.7k missing numbers itself for
   ~1.2-1.6k EUR via vat-search credits. Our product must beat that.
 
-  **22:49** vat-search About + API docs: claims 21M+ UK VAT IDs vs ~2.18M active
+**22:49** vat-search About + API docs: claims 21M+ UK VAT IDs vs ~2.18M active
 registrations ≈ the entire checksum-valid number space (~20M) → strong
 inference that HMRC's checker was enumerated (incl. inactive numbers).
 API supports lookup by CH number (crnr, GB only) and EORI checks
@@ -417,3 +434,87 @@ Source D closed (notes/aggregators.md). Conclusions:
 - vat-search's 21M UK numbers ≈ the whole checksum-valid space →
   enumeration of the HMRC checker is the most plausible mechanism (inference).
 - Benchmark: the customer could buy ~26.7k lookups for ~1.2-1.6k EUR itself.
+
+
+**23:15** Common Crawl run complete: 500 WET files (0.5% of CC-MAIN-2026-43),
+10,580,125 pages, ~44 min on laptop (~5s/file, streamed).
+- 117,220 pages mention "VAT"; 19,771 carry a valid VAT number; 15,608 carry
+  a (CH, VAT) pair (79% of VAT pages) → 16,646 unique pairs.
+- 96% of pair pages are single-company (1 CH + 1 VAT) → used for analysis;
+  multi-company directory pages dropped.
+- 5,986 unique companies. Conflicts rare: 6 CH numbers with >1 VAT, 39 VAT
+  numbers with >1 CH (VAT groups / agencies / errors).
+- Accumulation: 50 files → ~1.1k, 500 → ~6.0k companies (sublinear).
+  Full crawl: power-law ≈ 290k (over-estimate), Chao1 ≥ 12k (weak at 0.5%)
+  → realistic: tens of thousands to a few hundred thousand companies per
+  monthly crawl vs 3.58M target. Niche but precise and nearly free.
+- Cost: full crawl ≈ 150 laptop-hours, or ~1.5h on 100 cores.
+Next: join with CH (src/analyse_cc.py), HMRC-check 30 random companies.
+
+
+**23:21** CH join (src/analyse_cc.py):
+- 5,834 / 5,986 CH numbers exist in the register (97.5%); 5,781 Active.
+- Accounts mix of found companies vs population → coverage in the 0.5% slice:
+  large (FULL+GROUP+AES) 0.84% | small 0.31% | small_exempt 0.28% |
+  micro 0.10% | new (NO ACCOUNTS FILED) 0.01%.
+  → large companies ~8× more likely than micro, ~80× more than new.
+  Web-corpus discovery is strongly skewed to large/established companies.
+- 170 of 2,947 companies incorporated 2011+ carry an old-scheme VAT number
+  (5.8%) → group numbers or errors; flagged.
+- Overlap with my 500 sample: 3 companies (2 large, 1 small_exempt), e.g.
+  Derbyshire Aggregates found on resinbondedaggregates.com, a brand domain
+  that name-guessing (A+B) could never find → C solves company→website.
+Output: results/cc_companies.csv (PoC dataset, one row per company).
+Next: HMRC-check 30 random companies + the 3 sample hits → false-positive rate.
+
+**23:45** HMRC precision check: 30 random CC companies + the 3 sample hits
+(results/cc_hmrc_check.csv), manual, web checker.
+- Valid & HMRC name = CH name: 29 / 33
+  (273261215; first entry had a copy-paste error: "EXTRA UK LTD")
+- Valid but registered to another group entity: 2 (THG Hosting → FIC Shareco
+  Ltd, same postcode; Clearway Group → Clearway Environmental Services (UK)
+  Ltd, unconfirmed)
+- Invalid at HMRC: 2 (Droplet Tech, Sailbrand) → deregistered or wrong
+- Valid but unrelated company: 0
+FALSE-POSITIVE RATE:
+- before HMRC: 4/33 (~12%) not the company's own valid number;
+- after HMRC verification + name check: 0/31 wrong numbers left unflagged
+  (95% upper bound ≈ 10%, rule of three, n=31).
+Other findings:
+- Postcode HMRC = CH in only 15/31 (48%): registered office ≠ VAT/trading
+  address → address is NOT a reliable match key; name + CH anchor are.
+- Many companies trade under brand domains (sayitwithsongs.com,
+  vanfitsolutions.co.uk, westcars-tiverton.com...) → unreachable by
+  name→domain guessing, found by the corpus approach.
+- Scheme flag false alarm: Kellockbank (SC, incorporated after 2011,
+  old-scheme number) is correct and in its own name (possibly a VAT number
+  kept on transfer of a going concern) → the flag means "check", not
+  "reject".
+
+**~23:55** End of day 1 — status.
+
+Hypotheses:
+- H1 (mod-97 checksum filters noise): CONFIRMED. All real numbers pass; the
+  regex+checksum filter is what makes corpus extraction usable. But
+  checksum-valid ≠ registered (TES, Droplet Tech, Sailbrand).
+- H2 (VAT not derivable from CH number): CONSISTENT with everything seen; no
+  derivation exists → UK is a pure discovery problem.
+- H3 (GB EORI embeds the VAT number): SUPPORTED by vat-search API docs
+  (GB + 9 digits + 000). Not tested myself. Note: the HMRC EORI checker also
+  only verifies, so EORI is an adjacent identifier but NOT an easier discovery
+  route.
+- H4 (companies publish VAT on their websites): CONFIRMED for a minority:
+  3/10 in the pilot; in Common Crawl 79% of pages with a VAT number also carry
+  the CH number.
+
+Sources:
+- A+B (name → domain → website): dead end, 0/3 on the pilot.
+- C (Common Crawl, inverted): works. High precision, low coverage, strongly
+  skewed to large companies, nearly free at scale.
+- D (aggregators): useful signal, but not licensable as-is, partial coverage,
+  can carry wrong VAT↔CH links.
+
+Still TODO (README, Mon/Tue):
+- HMRC statistics on VAT registrations by legal form → realistic ceiling.
+- Write Part 1 (research trail), Part 2 (PoC + numbers), Part 3 (scale & cost).
+- Debate topics; optional: Germany vs UK.
