@@ -343,3 +343,77 @@ a search engine (paid API at scale) or a corpus where the CH number itself
 leads to the page → Common Crawl (C).
 Kept the CH-number identity check: it correctly refused to trust the two
 name-matched sites.
+
+
+**22:05** Common Crawl test, crawl CC-MAIN-2026-43 (100,000 WET files),
+2 random files (seeded), ~42k pages, ~5s/file streamed (no disk).
+- ~1% of pages mention "VAT"; 74 pages carry a checksum-valid VAT number.
+- 62 pages carry BOTH a labelled CH number and a VAT number (~84% of pages
+  with a VAT number) → the CH-number identity anchor is usually available.
+- Yield ≈ 1.5 pair-pages per 1,000 pages. Naive extrapolation to the full
+  crawl ≈ 3M pair-pages, but many will be duplicates (same company on several
+  pages) or multi-company directory pages → need unique-company count.
+- Next: 200 files (~0.2% of the crawl), then dedupe, join with CH register,
+  HMRC-check a random subsample of pairs for precision.
+
+
+  **22:13** Started Common Crawl run: 200 files, then stopped (Ctrl+C) at ~70
+and restarted with 500. Same seed → the first 200 of the 500 list are the
+same files; finished files are skipped. The file interrupted mid-way is
+reprocessed → some duplicate pairs in cc_pairs.csv, removed at analysis.
+
+**22:30-22:50** Source D: aggregators desk research (notes/aggregators.md).
+- #7 Fresh Art Club GB492114011 verified at HMRC: name + address match.
+  → 2/2 aggregator-only numbers correct (#4, #7).
+- vat-search.com (Linkomat GmbH, Vienna): paid VAT search BY NAME, API,
+  ~0.045-0.95 EUR per search; terms forbid retransmission / other use without
+  agreement → not resellable in our product. Also sells "full-service VAT
+  cleansing" with human specialists = exactly the customer's problem.
+- vat-lookup.co.uk: no search by name; looks like a checker whose result pages
+  get indexed by Google (hypothesis).
+- DECISION: no vat-search account (terms answer the key question; free tier
+  ~3 lookups). Coverage of this source stays unmeasured.
+- KEY for Part 3: the customer could fill its ~26.7k missing numbers itself for
+  ~1.2-1.6k EUR via vat-search credits. Our product must beat that.
+
+  **22:49** vat-search About + API docs: claims 21M+ UK VAT IDs vs ~2.18M active
+registrations ≈ the entire checksum-valid number space (~20M) → strong
+inference that HMRC's checker was enumerated (incl. inactive numbers).
+API supports lookup by CH number (crnr, GB only) and EORI checks
+(GB + VAT + 000, supports H3). Sole traders included → GDPR issue.
+
+
+**23:00** vat-lookup.co.uk. Homepage claims reverse lookup by name and VAT
+data for 1.5M+ UK companies (my "checker only" hypothesis was wrong).
+Name search: 0/3 found (#1, #4, #7), although all three numbers exist.
+Lookup by number (Chubb GB668395969):
+(1) links the VAT number to the WRONG CH entity: Chubb European Group PLC
+    (01112892, closed), not Chubb Services UK Ltd (01509033, my sample)
+    → aggregator joins carry the invisible false-positive risk;
+(2) stale: last checked Jan 2025, address changed since (HMRC today: 40
+    Leadenhall St);
+(3) volatile registered names (incl. a one-month "Courtiers Group Holdings");
+(4) re-polls HMRC and diffs the results = a refresh strategy in the wild.
+Observation: checksum scheme ≈ issue period (new "+55" scheme from Nov 2009);
+consistent on all 8 real numbers I hold → cheap plausibility check: company
+incorporated after 2010 + old-scheme number → probably a group's / another
+entity's number. Terms forbid copying → not usable in a product.
+
+**23:04** Endole: VAT shown for #7 only (1/3 known positives); confirms Chubb
+Services UK = CH 01509033. Terms forbid scraping (2.5), automated delivery
+only via paid API licence (3.2), B2B-only uses, no accuracy warranty.
+VAT data source not stated.
+vat-search: search impossible without an account → coverage unmeasured.
+
+Source D closed (notes/aggregators.md). Conclusions:
+- Aggregators cover cases websites don't (2/2 aggregator-only numbers
+  correct), but coverage is partial and unexplained (vat-lookup 0/3 by name,
+  Endole 1/3).
+- None is usable in a product without a licence (vat-search: no
+  retransmission; vat-lookup: no copying; Endole: no scraping, listed B2B
+  uses only). None warrants accuracy.
+- Aggregator VAT↔CH joins can be wrong (Chubb) → need the same identity
+  checks as web data.
+- vat-search's 21M UK numbers ≈ the whole checksum-valid space →
+  enumeration of the HMRC checker is the most plausible mechanism (inference).
+- Benchmark: the customer could buy ~26.7k lookups for ~1.2-1.6k EUR itself.
