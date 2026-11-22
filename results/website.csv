@@ -1,0 +1,11 @@
+process_order,stratum,CompanyNumber,CompanyName,domain,status,ch_found,vat_candidates,vat_labelled,evidence_url,pages_fetched,seconds
+8,new,17340160,SABAYAHAIR LTD,,no_site,False,,,,0,0.8
+7,small_exempt,15759329,FRESH ART CLUB LTD,freshartclub.co.uk,site_unconfirmed,False,,,,5,1.5
+6,new,17288759,LGSL ONLINE LTD,lgslonline.com,site_unconfirmed,False,,,,1,1.5
+9,small,14314649,INGR TECHNOLOGY LTD,,no_site,False,,,,0,1.6
+10,small,02813836,BLUE JAY OF LONDON LTD.,,no_site,False,,,,0,1.8
+3,new,17015962,THUNDER ENERGY SERVICES LTD,,no_site,False,,,,0,1.8
+5,large,10192357,CHRISTOPHER TOPCO LIMITED,,no_site,False,,,,0,2.0
+2,micro,05048291,CLEARWATER SERVICING LTD,,no_site,False,,,,0,2.3
+4,large,01509033,CHUBB SERVICES UK LIMITED,,no_site,False,,,,0,18.9
+1,large,01047302,BRITISH ARAB COMMERCIAL BANK PLC,,no_site,False,,,,0,65.6

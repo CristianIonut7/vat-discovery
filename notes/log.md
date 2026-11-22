@@ -294,3 +294,52 @@ Findings:
 → In 3/3 own-website finds, VAT number and the correct CH number are on the
   same site. Rule "accept VAT only if the company's CH number is on the
   same site" would keep all 3 good finds and reject the #10 trap.
+
+
+
+  **21:45** DECISION: what to automate next. Options considered:
+- A+B (guess domain from name → fetch homepage + legal pages → extract VAT,
+  accept only if CH number on same site). Code written (src/sources/website.py).
+  My doubt: domain guessing misses many sites (e.g. #9 is ingr.tech, not
+  guessable from the name). Expect high precision, low coverage.
+- C (Common Crawl). Invert the problem: instead of company → site → number,
+  scan a random slice of the crawl once and extract every (CH number, VAT
+  number) pair co-occurring on the same page. This is the "bulk corpus"
+  shape the brief hints at.
+- D (aggregators: vat-lookup, Endole, vat-search). Document coverage,
+  stated sources, freshness, terms of use. No bulk scraping.
+
+PLAN:
+1. A+B on the 10 pilot companies only, as a baseline against my manual
+   results (~5 min). If it fails, that's a documented dead end with evidence.
+2. C as the main experiment: ~10-20 WET files (random slice of one monthly
+   crawl). Measure: yield (pairs per million pages), precision (HMRC check
+   on a subsample of pairs), extrapolation to the full crawl → coverage and
+   cost per company at scale (Part 3).
+   Caveat: on ~20 of ~100k files, almost none of my 500 sample companies will
+   appear. C measures CORPUS YIELD, not sample coverage; report the two
+   separately.
+3. D at the end (~30 min, desk research).
+
+
+**21:51** A+B baseline on the 10 pilot companies → 0/3 of my manual
+own-website finds recovered; 2 sites found, both unconfirmed
+(freshartclub.co.uk, lgslonline.com). Note: script found freshartclub.co.uk,
+I had found freshartclub.com → same name, two domains: name is not identity.
+
+Why it failed (real domains from the pilot):
+| # | Company                          | Real domain                              | Failure mode |
+|---|----------------------------------|------------------------------------------|--------------|
+| 1 | British Arab Commercial Bank PLC | bacb.co.uk                               | acronym |
+| 2 | Clearwater Servicing Ltd         | clearwaterltd.com, clearwaterchemicals.co.uk | brand name ≠ legal name, 2 domains |
+| 3 | Thunder Energy Services Ltd      | thunderenergy.co.uk                      | generic word dropped ("Services") |
+Fetch test on thunderenergy.co.uk: [OK] → [failure is domain
+guessing, not blocking].
+
+DEAD END: name → domain guessing. Even with variants (dropping generic words)
+it would recover at most 1/3 here; acronyms and brand names are not derivable
+from the CH name. The company→website step needs a different shape:
+a search engine (paid API at scale) or a corpus where the CH number itself
+leads to the page → Common Crawl (C).
+Kept the CH-number identity check: it correctly refused to trust the two
+name-matched sites.
