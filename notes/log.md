@@ -231,4 +231,25 @@ Allocation: considered three options.
 Why: the goal is not one headline number but understanding how feasibility
 varies by company type; per-stratum precision matters more here.
 
+SIC filter uses ALL 4 SIC codes: a company counts as irrelevant only if EVERY
+supplied code is in the excluded list (68xxx/64209/98000/99999). E.g. 68100 +
+47910 still trades → kept.
+
 Reproducibility: fixed random seed.
+
+
+
+**19:10** sample.py hit Out of Memory on the full snapshot; ran after freeing
+RAM (~95% used). Replaced with a low-memory version (only the 16 needed
+columns, drop intermediate tables, spill to disk). Same deterministic sample.
+
+
+**19:11** Sample drawn (data/sample/sample.csv, 500 rows, shuffled order).
+Population per stratum (data/sample/strata_sizes.csv):
+micro 1,384,125 (38.7% of target) | new 959,573 (26.8%) |
+small_exempt 956,898 (26.7%) | small 173,214 (4.8%) | large 107,347 (3.0%)
+Target population ≈ 3.58M. Excluded as irrelevant ≈ 1.22M (control group).
+Left out ≈ 14k (negligible).
+Sanity bound: ~2.18M VAT registrations nationally INCLUDING sole traders
+vs 3.58M target companies → coverage can never approach 100%.
+TODO: find HMRC stats on VAT registrations by legal form → realistic ceiling.
