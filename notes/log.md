@@ -253,3 +253,45 @@ Left out ≈ 14k (negligible).
 Sanity bound: ~2.18M VAT registrations nationally INCLUDING sole traders
 vs 3.58M target companies → coverage can never approach 100%.
 TODO: find HMRC stats on VAT registrations by legal form → realistic ceiling.
+
+
+- #4 Gemini cited a "VAT lookup" aggregator site [nume/URL] as source;
+  the site did not load for me → number unverifiable from source.
+  Aggregators appear repeatedly (also vat-search.com) → investigate later:
+  where do they get numbers, how fresh, can a product legally use them?
+
+
+  - #4 HMRC check: GB668395969 → CHUBB SERVICES UK LIMITED, 40 Leadenhall St,
+  London EC3A 2BJ. Correct match. [CH address matches? yes/no]
+  Gemini was right here, but n=1 proves nothing about LLM reliability.
+  KEY: number NOT on company's own site, yet the aggregator (vat-lookup.co.uk)
+  has it. Hypotheses for how aggregators get numbers: (a) invoices / public
+  documents, (b) systematic enumeration of HMRC checker with checksum-valid
+  numbers (see debate topic). Unknown — investigate their stated sources.
+
+  | 5 | CHRISTOPHER TOPCO LIMITED | large | no own site; only CH-data aggregators | no | 2 | SIC 56101 (restaurants) but name = "Topco" → holding at top of a group, declares the group's SIC; my SIC filter can't catch it. Name patterns (Topco/Midco/Bidco/Holdings) are a better signal. Likely in a VAT group → "not found" probably correct |
+
+  - Holding companies can declare the group's operating SIC (e.g. 56101) →
+  SIC-based exclusion misses them. Name patterns (Topco/Midco/Bidco/Holdings)
+  could flag them. Large stratum likely over-represents holdings/subsidiaries
+  (VAT groups) → expect lower "own number" discovery there.
+
+
+  - IDEA: CH company number on the same page/site as the VAT number = strong
+  identity anchor (legally required on UK company websites). Use it to accept
+  a candidate, instead of fuzzy name matching → reduces false positives.
+
+
+  **21:25** Manual pilot done (notes/pilot.md), first 10 companies, ~25 min.
+- Candidate VAT found: 5/10 (3 own website, 2 aggregators only).
+- Website found: 6/10; confirmed by CH number on site: [n].
+- Nothing at all: 4/10 (holding with no site, new companies, small firms).
+- ~2.5 min/company manually → 500 companies ≈ 21h; doesn't scale.
+Findings:
+1. Discovery = 3 sub-problems: company→website (hard),
+   website→VAT (easy when present: footer / T&Cs), aggregators.
+2. Aggregators (vat-lookup, Endole, vat-search) hold numbers companies don't
+   publish themselves (#4 Chubb, verified at HMRC; #7 Fresh Art Club).
+3. Name matching is dangerous: for #10 Gemini offered VAT numbers of
+   similarly-named companies. CH number on the page = identity anchor.
+4. n=10: signals only, not rates.
