@@ -12,29 +12,30 @@ Candidates are **not** counted as found until verified on the HMRC checker.
 
 | # | Company | Stratum | Website | VAT candidate & source | Min | Notes |
 |---|---------|---------|---------|------------------------|-----|-------|
-| 1 | BRITISH ARAB COMMERCIAL BANK PLC | large | yes, 1st search result | GB397172124, company website | 1 | CH no. on site matches → **confirmed** |
-| 2 | CLEARWATER SERVICING LTD | micro | yes, 3rd search result | GB207409622, website footer | 2 | CH no. on site matches → **confirmed** |
-| 3 | THUNDER ENERGY SERVICES LTD | new | yes | GB518641484, terms of service page | 2 | CH no. on site matches → **confirmed**. New company that does publish its VAT. |
+| 1 | BRITISH ARAB COMMERCIAL BANK PLC | large | yes, 1st search result (bacb.co.uk) | GB397172124, company website | 1 | CH no. on site matches → **confirmed**. **HMRC: name match.** |
+| 2 | CLEARWATER SERVICING LTD | micro | yes, 3rd search result (clearwaterchemicals.co.uk) | GB207409622, website footer | 2 | **WRONG SITE.** VAT found on clearwaterchemicals.co.uk, whose footer reads "Company Registration No: 09476227", not 05048291 → another company's brand site (Wilton Bradley group, brand "Clearwater®"). My "CH matches" check was wrong (misread by eye). HMRC: WILTON BRADLEY LIMITED, TQ12 6TL. → not found for this company. |
+| 3 | THUNDER ENERGY SERVICES LTD | new | yes (thunderenergy.co.uk) | GB518641484, terms of service page | 2 | CH no. on site matches → **confirmed**. New company that does publish its VAT. **HMRC: name match.** |
 | 4 | CHUBB SERVICES UK LIMITED | large | no own site, uses group site (chubb.com) | GB668395969, via Gemini → aggregator (vat-lookup.co.uk, page did not load) | 4 | Not on company site. **HMRC: CHUBB SERVICES UK LIMITED, 40 Leadenhall St, EC3A 2BJ → name + address match CH.** |
 | 5 | CHRISTOPHER TOPCO LIMITED | large | no own site; only CH-data aggregators (companycheck, formationdata) | none | 2 | SIC 56101 (restaurants) but name = "Topco" → holding at top of a group, declares the group's SIC; SIC filter can't catch it. Likely in a VAT group → "not found" probably correct. |
 | 6 | LGSL ONLINE LTD | new | lgslonline.com (via Gemini), **unconfirmed**: no CH no., no address on site | none | 3 | Can't link site to company. UK law requires CH details on company websites → absent = non-compliant or not this company. |
-| 7 | FRESH ART CLUB LTD | small_exempt | freshartclub.com, **unconfirmed**: no CH no., no VAT on site | GB492114011, Endole (aggregator) only | 4 | CH no. in Endole URL matches sample. Number not published by the company itself.**HMRC: name + address match.** |
+| 7 | FRESH ART CLUB LTD | small_exempt | freshartclub.com, **unconfirmed**: no CH no., no VAT on site | GB492114011, Endole (aggregator) only | 4 | CH no. in Endole URL matches sample. Number not published by the company itself. **HMRC: name + address match.** |
 | 8 | SABAYAHAIR LTD | new | none found | none | 3 | New company, no web presence. |
 | 9 | INGR TECHNOLOGY LTD | small | ingr.tech, **confirmed** (CH no. on /terms matches) | none, not on terms page | 3 | Strongest kind of "not found": right page, confirmed site. Not registered, or B2B firm not obliged to publish? |
 | 10 | BLUE JAY OF LONDON LTD. | small | none found | none | 3 | Gemini offered VAT numbers of **similarly named** companies (BluJay Solutions, Bluejay Homes) → false-positive trap for name matching. |
 
-In all 3 own-website finds, the VAT number and the matching CH number appear on the same site.
-All 5 candidates pass the mod-97 checksum. HMRC verification so far:  #4, #7 (both correct).
+All 5 candidates pass the mod-97 checksum. HMRC verification (2026-11-23): #1, #3, #4, #7 correct; #2 registered to an unrelated company (wrong site, see row #2).
+In both correct own-website finds (#1, #3), the VAT number and the correct CH number appear on the same site.
 
 ## Summary
 
 | Outcome | Companies |
 |---------|-----------|
 | VAT candidate found | 5/10 (#1, #2, #3, #4, #7) |
-| – from the company's own website | 3 (#1, #2, #3) |
+| **Correct after HMRC verification** | **4/10 (#1, #3, #4, #7)** |
+| – from the company's own website | 3 (#1, #2, #3); 2 correct after HMRC (#2 was another company's site) |
 | – from aggregators only | 2 (#4, #7) |
 | Website found | 6/10 (#1, #2, #3, #6, #7, #9) |
-| – confirmed by CH number on site | 4 (#1, #2, #3, #9) |
+| – confirmed by CH number on site | 3 (#1, #3, #9) |
 | Nothing found | 4/10 (#5, #6, #8, #10) |
 
 n = 10: these are signals, not rates.

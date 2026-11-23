@@ -283,6 +283,7 @@ proper write-up. Plan: sources + experiments tonight, README Mon/Tue.
 **21:25** Manual pilot done, ~25 min.
 - Candidate VAT found: 5/10 (3 own website, 2 aggregators only).
 - Website found: 6/10; confirmed by CH number on site: 4 (#1, #2, #3, #9).
+  (CORRECTED 2026-11-23 21:15: #2 was another company's site → 3.)
 - Nothing at all: 4/10 (holding with no site, new companies, small firms).
 - ~2.5 min/company manually → 500 companies ≈ 21h; doesn't scale.
 Findings:
@@ -298,6 +299,8 @@ Findings:
 → In 3/3 own-website finds, VAT number and the correct CH number are on the
   same site. Rule "accept VAT only if the company's CH number is on the
   same site" would keep all 3 good finds and reject the #10 trap.
+  CORRECTION (2026-11-23 21:15): wrong for #2. The Clearwater site shows
+  CH 09476227, not 05048291. Only #1 and #3 actually match.
 
 
 
@@ -470,7 +473,7 @@ Next: HMRC-check 30 random companies + the 3 sample hits → false-positive rate
 **23:45** HMRC precision check: 30 random CC companies + the 3 sample hits
 (results/cc_hmrc_check.csv), manual, web checker.
 - Valid & HMRC name = CH name: 29 / 33
-  (273261215; first entry had a copy-paste error: "EXTRA UK LTD")
+  (MGAA 273261215 re-checked: my first entry had a copy-paste error.)
 - Valid but registered to another group entity: 2 (THG Hosting → FIC Shareco
   Ltd, same postcode; Clearway Group → Clearway Environmental Services (UK)
   Ltd, unconfirmed)
@@ -504,7 +507,7 @@ Hypotheses:
   only verifies, so EORI is an adjacent identifier but NOT an easier discovery
   route.
 - H4 (companies publish VAT on their websites): CONFIRMED for a minority:
-  3/10 in the pilot; in Common Crawl 79% of pages with a VAT number also carry
+  3/10 in the pilot (2/10 after the 2026-11-23 correction); in Common Crawl 79% of pages with a VAT number also carry
   the CH number.
 
 Sources:
@@ -518,3 +521,30 @@ Still TODO (README, Mon/Tue):
 - HMRC statistics on VAT registrations by legal form → realistic ceiling.
 - Write Part 1 (research trail), Part 2 (PoC + numbers), Part 3 (scale & cost).
 - Debate topics; optional: Germany vs UK.
+
+**00:03** Control-group check, using the Common Crawl finds instead of the
+30-company control sample: 31 of 5,834 companies that publish a VAT number
+are DORMANT (0.5%), vs ~11% dormant among active companies in the register
+→ dormant companies are ~20× under-represented among VAT publishers.
+Supports excluding them as "irrelevant". The 31 exceptions: possibly started
+trading after their last dormant accounts, or group entities (hypothesis).
+
+
+## 2026-11-23
+
+**20:30-21:15** Started README: sections 1 (framing), 2 (research trail),
+3 (PoC). Writing it surfaced the unverified pilot numbers #1-#3 → checked above.
+
+**21:15** HMRC check of pilot #1-#3 (never verified before):
+- #1 GB397172124 → BRITISH ARAB COMMERCIAL BANK PUBLIC LIMITED COMPANY: match.
+- #3 GB518641484 → THUNDER ENERGY SERVICES LTD: match.
+- #2 GB207409622 → WILTON BRADLEY LIMITED (TQ12 6TL). Clearwater Servicing Ltd
+  (05048291): PSC Walder + Wright, Birmingham/Hitchin. Wilton Bradley Ltd
+  (09476216): Bradley family, Newton Abbot, Devon. No shared owners/directors.
+  Footer of clearwaterchemicals.co.uk: "Company Registration No: 09476227"
+  → a different company (likely a sister of Wilton Bradley, brand "Clearwater®").
+→ The CH-anchor rule would have rejected it if applied exactly; my manual check
+  failed on a same-name brand + similar-looking number → argument for automated,
+  digit-exact matching (which the Common Crawl pipeline does).
+Pilot after verification: 4 correct numbers / 10 companies (2 own site,
+2 aggregators-only); 1 wrong candidate.
